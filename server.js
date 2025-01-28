@@ -16,12 +16,12 @@ const PORT = process.env.PORT || 5000;
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+    .connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => console.log("MongoDB connected"))
+    .catch((err) => console.log(err));
 
 // Import models
 const User = require("./models/user");
@@ -30,67 +30,68 @@ const Evaluation = require("./models/evaluation");
 
 // Add Client Route
 app.post("/api/addclient", async (req, res) => {
-  const { name, email, website } = req.body;
+    const { name, email, website } = req.body;
 
-  if (!name || !email) {
-    return res.status(400).json({ msg: "Name and email are required" });
-  }
+    if (!name || !email) {
+        return res.status(400).json({ msg: "Name and email are required" });
+    }
 
-  try {
-    const newClient = new AddClientForm({ name, email, website });
-    await newClient.save();
-    res.status(201).json({ msg: "Client added successfully!" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
+    try {
+        const newClient = new AddClientForm({ name, email, website });
+        await newClient.save();
+        res.status(201).json({ msg: "Client added successfully!" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
 });
 
 // Get All Clients Route
 app.get("/api/clients", async (req, res) => {
-  try {
-    const clients = await AddClientForm.find();
-    res.status(200).json(clients);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
+    try {
+        const clients = await AddClientForm.find();
+        res.status(200).json(clients);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
 });
 
 // Register Route
 app.post("/api/register", async (req, res) => {
-  const { username, email, password } = req.body;
-  try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ msg: "User already exists." });
+    const { username, email, password } = req.body;
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) return res.status(400).json({ msg: "User already exists." });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, email, password: hashedPassword });
-    await newUser.save();
-    res.status(201).json({ msg: "User created successfully" });
-  } catch (err) {
-    res.status(500).json({ msg: "Server error" });
-  }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, email, password: hashedPassword });
+        await newUser.save();
+        res.status(201).json({ msg: "User created successfully" });
+    } catch (err) {
+        res.status(500).json({ msg: "Server error" });
+    }
 });
 
 // Login Route
 app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
+    const { username, password } = req.body;
 
-  try {
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ msg: "User not found" });
+    try {
+        const user = await User.findOne({ username });
+        if (!user) return res.status(400).json({ msg: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token });
-  } catch (err) {
-    res.status(500).json({ msg: "Server error" });
-  }
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        res.json({ token });
+    } catch (err) {
+        res.status(500).json({ msg: "Server error" });
+    }
 });
 
+// Add Evaluation Route
 // Add Evaluation Route
 app.post("/api/addevaluation", async (req, res) => {
     const {
@@ -131,8 +132,8 @@ app.post("/api/addevaluation", async (req, res) => {
       }
     };
   
-    // Assign recommendations based on score
-    const recommendationNotes = getRecommendations(score);
+    // Compute recommendations based on the score
+    const finalRecommendationNotes = getRecommendations(score);
   
     if (!clientName || !clientEmail) {
       return res
@@ -157,7 +158,7 @@ app.post("/api/addevaluation", async (req, res) => {
     }
   
     try {
-      // Create a new evaluation and assign the computed tier
+      // Create a new evaluation and assign the computed tier and recommendations
       const newEvaluation = new Evaluation({
         clientName,
         clientEmail,
@@ -166,7 +167,7 @@ app.post("/api/addevaluation", async (req, res) => {
         preciseScore,
         totalScore,
         tier, // Automatically assign tier
-        recommendationNotes, // Automatically assigned here
+        recommendationNotes: finalRecommendationNotes, // Use final recommendations
         categories,
         isEvaluationFinished,
       });
@@ -179,20 +180,18 @@ app.post("/api/addevaluation", async (req, res) => {
     }
   });
   
-  
-
 // Get All Evaluations Route
 app.get("/api/evaluations", async (req, res) => {
-  try {
-    const evaluations = await Evaluation.find();
-    res.status(200).json(evaluations);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: "Server error" });
-  }
+    try {
+        const evaluations = await Evaluation.find();
+        res.status(200).json(evaluations);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
 });
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
