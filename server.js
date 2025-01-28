@@ -103,15 +103,47 @@ app.post("/api/addevaluation", async (req, res) => {
       categories,
       isEvaluationFinished, // Add this field
     } = req.body;
-
-    if (!clientName || !clientEmail) {
-        return res
-          .status(400)
-          .json({ msg: "Client name and email are required." });
+  
+    // Move this function above its usage
+    const getRecommendations = (score) => {
+      if (score >= 800 && score <= 1000) {
+        return []; // No recommendations needed
+      } else if (score >= 600 && score < 800) {
+        return [
+          "Optimize Operations.",
+          "Prioritize High-Impact Projects.",
+          "Enhance Partnerships.",
+        ];
+      } else if (score >= 400 && score < 600) {
+        return [
+          "Address Process Inefficiencies.",
+          "Identify Growth Opportunities.",
+          "Increase Client Engagement.",
+        ];
+      } else if (score >= 0 && score < 400) {
+        return [
+          "Assess and Restructure.",
+          "Achieve Quick Wins.",
+          "Refine Value Proposition.",
+        ];
+      } else {
+        return []; // Fallback for invalid scores
       }
+    };
+  
+    // Assign recommendations based on score
+    const recommendationNotes = getRecommendations(score);
+  
+    if (!clientName || !clientEmail) {
+      return res
+        .status(400)
+        .json({ msg: "Client name and email are required." });
+    }
   
     if (!score || !preciseScore || !totalScore) {
-      return res.status(400).json({ msg: "All required fields must be provided." });
+      return res
+        .status(400)
+        .json({ msg: "All required fields must be provided." });
     }
   
     // Determine the tier based on the score
@@ -133,9 +165,10 @@ app.post("/api/addevaluation", async (req, res) => {
         score,
         preciseScore,
         totalScore,
-        tier,  // Automatically assign tier
+        tier, // Automatically assign tier
+        recommendationNotes, // Automatically assigned here
         categories,
-        isEvaluationFinished, // Save the completion status
+        isEvaluationFinished,
       });
   
       await newEvaluation.save();
@@ -145,6 +178,7 @@ app.post("/api/addevaluation", async (req, res) => {
       res.status(500).json({ msg: "Server error" });
     }
   });
+  
   
 
 // Get All Evaluations Route
