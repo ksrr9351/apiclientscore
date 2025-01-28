@@ -213,6 +213,44 @@ app.get("/api/evaluations", async (req, res) => {
     }
 });
 
+app.put("/api/updatecategories/:id", async (req, res) => {
+    const { id } = req.params; // Get document _id from params
+    const { categories } = req.body; // Get categories from request body
+
+    if (!categories) {
+        return res.status(400).json({ msg: "Categories object is required" });
+    }
+
+    try {
+        // Find the existing evaluation document
+        const evaluation = await Evaluation.findById(id);
+
+        if (!evaluation) {
+            return res.status(404).json({ msg: "Evaluation not found" });
+        }
+
+        // Loop through categories and update only the provided fields
+        Object.keys(categories).forEach((category) => {
+            if (evaluation.categories[category]) {
+                Object.assign(evaluation.categories[category], categories[category]);
+            } else {
+                evaluation.categories[category] = categories[category];
+            }
+        });
+
+        // Save the updated document
+        await evaluation.save();
+
+        res.status(200).json({
+            msg: "Categories updated successfully",
+            updatedEvaluation: evaluation,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
