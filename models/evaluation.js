@@ -47,6 +47,8 @@ const evaluationObjSchema = new mongoose.Schema(
     tier: { type: String, required: false },
     isEvaluationFinished: { type: Boolean, default: false },
     recommendationNotes: { type: [String], default: [] }, // Add recommendation notes field
+    priority: { type: String },  // Added priority field
+    lastEvaluation: { type: String },  // Added lastEvaluation field
 
     categories: {
       financialHealth: evaluationCategorySchema,
