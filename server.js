@@ -92,94 +92,89 @@ app.post("/api/login", async (req, res) => {
 });
 
 // Add Evaluation Route
-// Add Evaluation Route
 app.post("/api/addevaluation", async (req, res) => {
     const {
-      clientName,
-      clientEmail,
-      clientWebsite, // Optional
-      score,
-      preciseScore,
-      totalScore,
-      categories,
-      isEvaluationFinished, // Add this field
-    } = req.body;
-  
-    // Move this function above its usage
-    const getRecommendations = (score) => {
-      if (score >= 800 && score <= 1000) {
-        return []; // No recommendations needed
-      } else if (score >= 600 && score < 800) {
-        return [
-          "Optimize Operations.",
-          "Prioritize High-Impact Projects.",
-          "Enhance Partnerships.",
-        ];
-      } else if (score >= 400 && score < 600) {
-        return [
-          "Address Process Inefficiencies.",
-          "Identify Growth Opportunities.",
-          "Increase Client Engagement.",
-        ];
-      } else if (score >= 0 && score < 400) {
-        return [
-          "Assess and Restructure.",
-          "Achieve Quick Wins.",
-          "Refine Value Proposition.",
-        ];
-      } else {
-        return []; // Fallback for invalid scores
-      }
-    };
-  
-    // Compute recommendations based on the score
-    const finalRecommendationNotes = getRecommendations(score);
-  
-    if (!clientName || !clientEmail) {
-      return res
-        .status(400)
-        .json({ msg: "Client name and email are required." });
-    }
-  
-    if (!score || !preciseScore || !totalScore) {
-      return res
-        .status(400)
-        .json({ msg: "All required fields must be provided." });
-    }
-  
-    // Determine the tier based on the score
-    let tier = "Tier4"; // Default to Tier4
-    if (score >= 800 && score <= 1000) {
-      tier = "Tier1";
-    } else if (score >= 600 && score < 800) {
-      tier = "Tier2";
-    } else if (score >= 400 && score < 600) {
-      tier = "Tier3";
-    }
-  
-    try {
-      // Create a new evaluation and assign the computed tier and recommendations
-      const newEvaluation = new Evaluation({
         clientName,
         clientEmail,
-        clientWebsite,
+        clientWebsite, // Optional
         score,
         preciseScore,
         totalScore,
-        tier, // Automatically assign tier
-        recommendationNotes: finalRecommendationNotes, // Use final recommendations
         categories,
-        isEvaluationFinished,
-      });
-  
-      await newEvaluation.save();
-      res.status(201).json({ msg: "Evaluation added successfully!" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Server error" });
+        isEvaluationFinished, // Add this field
+    } = req.body;
+
+    // Move this function above its usage
+    const getRecommendations = (score) => {
+        if (score >= 800 && score <= 1000) {
+            return []; // No recommendations needed
+        } else if (score >= 600 && score < 800) {
+            return [
+                "Optimize Operations.",
+                "Prioritize High-Impact Projects.",
+                "Enhance Partnerships.",
+            ];
+        } else if (score >= 400 && score < 600) {
+            return [
+                "Address Process Inefficiencies.",
+                "Identify Growth Opportunities.",
+                "Increase Client Engagement.",
+            ];
+        } else if (score >= 0 && score < 400) {
+            return [
+                "Assess and Restructure.",
+                "Achieve Quick Wins.",
+                "Refine Value Proposition.",
+            ];
+        } else {
+            return []; // Fallback for invalid scores
+        }
+    };
+
+    // Compute recommendations based on the score
+    const finalRecommendationNotes = getRecommendations(score);
+
+    if (clientName === undefined || clientEmail === undefined) {
+        return res.status(400).json({ msg: "Client name and email are required." });
     }
-  });
-  
+
+    if (score === undefined || preciseScore === undefined || totalScore === undefined) {
+        return res.status(400).json({ msg: "All required fields must be provided." });
+    }
+
+    // Determine the tier based on the score
+    let tier = "Tier4"; // Default to Tier4
+    if (score >= 800 && score <= 1000) {
+        tier = "Tier1";
+    } else if (score >= 600 && score < 800) {
+        tier = "Tier2";
+    } else if (score >= 400 && score < 600) {
+        tier = "Tier3";
+    }
+
+    try {
+        // Create a new evaluation and assign the computed tier and recommendations
+        const newEvaluation = new Evaluation({
+            clientName,
+            clientEmail,
+            clientWebsite,
+            score,
+            preciseScore,
+            totalScore,
+            tier, // Automatically assign tier
+            recommendationNotes: finalRecommendationNotes, // Use final recommendations
+            categories,
+            isEvaluationFinished,
+        });
+
+        await newEvaluation.save();
+        res.status(201).json({ msg: "Evaluation added successfully!" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
+});
+
 // Get All Evaluations Route
 app.get("/api/evaluations", async (req, res) => {
     try {
