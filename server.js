@@ -5,6 +5,7 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const bodyParser = require("body-parser");
+const { format, parseISO, formatDistanceToNow } = require("date-fns");
 
 dotenv.config();
 
@@ -96,15 +97,15 @@ app.post("/api/addevaluation", async (req, res) => {
     const {
         clientName,
         clientEmail,
-        clientWebsite, // Optional
+        clientWebsite,
         score,
         preciseScore,
         totalScore,
         categories,
-        isEvaluationFinished, // Add this field
+        isEvaluationFinished,
     } = req.body;
 
-    // Move this function above its usage
+    // Function to calculate recommendations based on the score
     const getRecommendations = (score) => {
         if (score >= 800 && score <= 1000) {
             return []; // No recommendations needed
@@ -131,6 +132,30 @@ app.post("/api/addevaluation", async (req, res) => {
         }
     };
 
+    // Function to calculate priority based on createdAt
+    const calculatePriority = (createdAt) => {
+        const dateString = createdAt instanceof Date ? createdAt.toISOString() : createdAt;
+
+        try {
+            const createdDate = parseISO(dateString);
+            const monthsDifference = formatDistanceToNow(createdDate, { unit: 'month' }).split(" ")[0];
+            const monthsAgo = parseInt(monthsDifference, 10);
+
+            if (monthsAgo >= 12) {
+                return "High"; // More than 12 months ago
+            } else if (monthsAgo >= 6) {
+                return "Medium"; // Between 6 and 12 months ago
+            } else if (monthsAgo >= 3) {
+                return "Low"; // Between 3 and 6 months ago
+            } else {
+                return "Update"; // Less than 3 months ago (optional, if you want to differentiate)
+            }
+        } catch (error) {
+            console.error("Error in calculating priority:", error);
+            return "Unknown"; // Return a fallback value if parsing fails
+        }
+    };
+
     // Compute recommendations based on the score
     const finalRecommendationNotes = getRecommendations(score);
 
@@ -153,7 +178,7 @@ app.post("/api/addevaluation", async (req, res) => {
     }
 
     try {
-        // Create a new evaluation and assign the computed tier and recommendations
+        // Create a new evaluation and assign the computed tier, recommendations, priority, and lastEvaluation
         const newEvaluation = new Evaluation({
             clientName,
             clientEmail,
@@ -161,10 +186,12 @@ app.post("/api/addevaluation", async (req, res) => {
             score,
             preciseScore,
             totalScore,
-            tier, // Automatically assign tier
-            recommendationNotes: finalRecommendationNotes, // Use final recommendations
+            tier,
+            recommendationNotes: finalRecommendationNotes,
             categories,
             isEvaluationFinished,
+            priority: calculatePriority(new Date()), // Calculate and store priority
+            lastEvaluation: format(new Date(), 'dd/MM/yyyy'), // Format the last evaluation date
         });
 
         await newEvaluation.save();
