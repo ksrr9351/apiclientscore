@@ -246,6 +246,9 @@ app.put("/api/updatecategories/:id", async (req, res) => {
         const newPreciseScore = calculatePreciseScore(evaluation.categories); // Implement this function based on your logic
         evaluation.preciseScore = newPreciseScore;
 
+        // Set isEvaluationFinished to true
+        evaluation.isEvaluationFinished = true;
+
         // Determine the new tier based on the new score
         if (newScore >= 800 && newScore <= 1000) {
             evaluation.tier = "Tier1";
