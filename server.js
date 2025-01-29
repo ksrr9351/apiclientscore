@@ -29,6 +29,33 @@ const User = require("./models/user");
 const AddClientForm = require("./models/addclient");
 const Evaluation = require("./models/evaluation");
 
+// Function to calculate recommendations based on the score
+const getRecommendations = (score) => {
+    if (score >= 800 && score <= 1000) {
+        return []; // No recommendations needed
+    } else if (score >= 600 && score < 800) {
+        return [
+            "Optimize Operations.",
+            "Prioritize High-Impact Projects.",
+            "Enhance Partnerships.",
+        ];
+    } else if (score >= 400 && score < 600) {
+        return [
+            "Address Process Inefficiencies.",
+            "Identify Growth Opportunities.",
+            "Increase Client Engagement.",
+        ];
+    } else if (score >= 0 && score < 400) {
+        return [
+            "Assess and Restructure.",
+            "Achieve Quick Wins.",
+            "Refine Value Proposition.",
+        ];
+    } else {
+        return []; // Fallback for invalid scores
+    }
+};
+
 // Add Client Route
 app.post("/api/addclient", async (req, res) => {
     const { name, email, website } = req.body;
@@ -104,33 +131,6 @@ app.post("/api/addevaluation", async (req, res) => {
         categories,
         isEvaluationFinished,
     } = req.body;
-
-    // Function to calculate recommendations based on the score
-    const getRecommendations = (score) => {
-        if (score >= 800 && score <= 1000) {
-            return []; // No recommendations needed
-        } else if (score >= 600 && score < 800) {
-            return [
-                "Optimize Operations.",
-                "Prioritize High-Impact Projects.",
-                "Enhance Partnerships.",
-            ];
-        } else if (score >= 400 && score < 600) {
-            return [
-                "Address Process Inefficiencies.",
-                "Identify Growth Opportunities.",
-                "Increase Client Engagement.",
-            ];
-        } else if (score >= 0 && score < 400) {
-            return [
-                "Assess and Restructure.",
-                "Achieve Quick Wins.",
-                "Refine Value Proposition.",
-            ];
-        } else {
-            return []; // Fallback for invalid scores
-        }
-    };
 
     // Function to calculate priority based on createdAt
     const calculatePriority = (createdAt) => {
@@ -229,7 +229,7 @@ app.put("/api/updatecategories/:id", async (req, res) => {
             return res.status(404).json({ msg: "Evaluation not found" });
         }
 
-        // Loop through categories and update only the provided fields
+        // Update categories
         Object.keys(categories).forEach((category) => {
             if (evaluation.categories[category]) {
                 Object.assign(evaluation.categories[category], categories[category]);
@@ -238,11 +238,34 @@ app.put("/api/updatecategories/:id", async (req, res) => {
             }
         });
 
+        // Recalculate score based on updated categories
+        const newScore = calculateScore(evaluation.categories); // Calculate the new score
+        evaluation.score = newScore;
+
+        // Recalculate preciseScore based on your logic
+        const newPreciseScore = calculatePreciseScore(evaluation.categories); // Implement this function based on your logic
+        evaluation.preciseScore = newPreciseScore;
+
+        // Determine the new tier based on the new score
+        if (newScore >= 800 && newScore <= 1000) {
+            evaluation.tier = "Tier1";
+        } else if (newScore >= 600 && newScore < 800) {
+            evaluation.tier = "Tier2";
+        } else if (newScore >= 400 && newScore < 600) {
+            evaluation.tier = "Tier3";
+        } else {
+            evaluation.tier = "Tier4"; // Default to Tier4
+        }
+
+        // Optionally, update other fields like lastEvaluation or recommendations
+        evaluation.lastEvaluation = format(new Date(), 'dd/MM/yyyy');
+        evaluation.recommendationNotes = getRecommendations(newScore); // Now this function is accessible
+
         // Save the updated document
         await evaluation.save();
 
         res.status(200).json({
-            msg: "Categories updated successfully",
+            msg: "Categories updated and evaluation recalculated successfully",
             updatedEvaluation: evaluation,
         });
     } catch (err) {
@@ -250,6 +273,24 @@ app.put("/api/updatecategories/:id", async (req, res) => {
         res.status(500).json({ msg: "Server error" });
     }
 });
+
+// Function to calculate score based on categories
+const calculateScore = (categories) => {
+    let score = 0;
+    Object.values(categories).forEach(category => {
+        score += category.score || 0; // Assuming each category has a score property
+    });
+    return score;
+};
+
+// Function to calculate precise score based on categories
+const calculatePreciseScore = (categories) => {
+    let preciseScore = 0;
+    Object.values(categories).forEach(category => {
+        preciseScore += category.preciseScore || 0; // Assuming each category has a preciseScore property
+    });
+    return preciseScore;
+};
 
 // Start the server
 app.listen(PORT, () => {
