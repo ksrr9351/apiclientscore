@@ -18,6 +18,7 @@ const evaluationCategorySchema = new mongoose.Schema(
     resourceUtilization: { type: Number },
     projectTimeliness: { type: Number },
     marketCap: { type: Number },
+    tradingVolume: {type: Number},
     holderDistribution: { type: Number },
     stability: { type: Number },
     communitySize: { type: Number },
