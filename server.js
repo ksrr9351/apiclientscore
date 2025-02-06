@@ -276,6 +276,20 @@ app.put("/api/updatecategories/:id", async (req, res) => {
         res.status(500).json({ msg: "Server error" });
     }
 });
+app.delete("/api/removeuser/:id", async (req, res) => {
+    const { id } = req.params; // Get document _id from params
+
+    try {
+        const evaluation = await Evaluation.findByIdAndDelete(id);
+        if (!evaluation) {
+            return res.status(404).json({ msg: "Evaluation not found" });
+        }
+        res.status(200).json({ msg: "User deleted successfully!" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
+});
 
 // Function to calculate score based on categories
 const calculateScore = (categories) => {
